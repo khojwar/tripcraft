@@ -1,22 +1,15 @@
 import {
   NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuIndicator,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
 } from "@/components/ui/navigation-menu"
 import Link from "next/link"
-import { ModeToggle } from "./ModeToggle"
+import { ModeToggle } from "./Mode-toggle"
 
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 
@@ -60,9 +53,9 @@ const Navbar = () => {
                         <Menu />
                     </SheetTrigger>
                     <SheetContent side="right" className="top-14 w-[60%]">
-                        <div className="flex flex-col justify-start items-start space-y-4 mt-4 ">
-                            <Link href="/work" className="pl-3">How it works</Link>
-                            <Link href="/examples" className="pl-3">Examples</Link>
+                        <div className="flex flex-col justify-start items-start space-y-4 mt-4 pl-3">
+                            <Link href="/work" >How it works</Link>
+                            <Link href="/examples" >Examples</Link>
                             <ModeToggle />
                         </div>
                     </SheetContent>

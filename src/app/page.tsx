@@ -1,13 +1,14 @@
-import { ModeToggle } from '@/components/ModeToggle';
-import {Button} from '@/components/ui/button';
+
+import FeatureSection from '@/components/Feature-section';
+import HeroSection from '@/components/Hereo-section';
 
 
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <Button size="lg">Hello, TripCraft!</Button>
-      <ModeToggle />
-    </div>
+    <>
+      <HeroSection />
+      <FeatureSection />
+    </>
   );
 }
