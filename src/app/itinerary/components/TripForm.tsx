@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
+import { generateItinerary } from '@/lib/llm';
 
 // Schema
 const travelSchema = z.object({
@@ -41,12 +42,24 @@ export default function TravelForm() {
     }
   });
 
-  const onSubmit = (data: TravelFormValues) => {
-    // encode and navigate to itinerary page
-    const encoded = encodeURIComponent(JSON.stringify(data));
-    router.push(`/itinerary?payload=${encoded}`);
-
+  const onSubmit = async (data: TravelFormValues) => {
     console.log('Form submitted:', data);
+
+    // LLM call
+    try {
+      const prompt = `Generate a detailed day-by-day itinerary JSON for ${data.travelers} travelers to ${data.destination} from ${data.start} to ${data.end} in ${data.style} style. Max budget: ${data.budget}.`;
+      const itinerary = await generateItinerary(prompt);
+      console.log('Generated Itinerary:', itinerary);
+
+  
+    } catch (error) {
+      console.error('Error generating itinerary:', error);
+    }
+    // fetch weather
+
+
+
+
   };
 
   // demo payload

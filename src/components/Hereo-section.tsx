@@ -3,8 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function HeroSection() {
+  const router = useRouter();
+  
   return (
     <section className="relative w-full py-24 md:py-40 bg-background">
       <div className="container mx-auto px-4 text-center">
@@ -48,7 +51,7 @@ export default function HeroSection() {
           transition={{ delay: 0.45, duration: 0.7 }}
           className="mt-10 flex justify-center gap-4"
         >
-          <Button size="lg" className="rounded-2xl px-8">
+          <Button size="lg" className="rounded-2xl px-8" onClick={() => router.push('/itinerary')}>
             Get Started <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
 
