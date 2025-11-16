@@ -43,24 +43,178 @@ export default function TravelForm() {
   });
 
   const onSubmit = async (data: TravelFormValues) => {
-    console.log('Form submitted:', data);
+    console.log("Form submitted:", data);
 
-    // LLM call
+    let out: any = null;  // ✅ declare here so it's accessible everywhere
+
     try {
-      const prompt = `Generate a detailed day-by-day itinerary JSON for ${data.travelers} travelers to ${data.destination} from ${data.start} to ${data.end} in ${data.style} style. Max budget: ${data.budget}.`;
-      const itinerary = await generateItinerary(prompt);
-      console.log('Generated Itinerary:', itinerary);
+      // const payload = {
+      //   contents: [
+      //     {
+      //       role: "user",
+      //       parts: [
+      //         {
+      //           text: `
+      //                   You are a travel planning AI.  
+      //                   Generate an itinerary in pure JSON with NO explanation.
 
-  
+      //                   ### Inputs
+      //                   - Destination: ${data.destination}
+      //                   - Travelers: ${data.travelers}
+      //                   - Start date: ${data.start}
+      //                   - End date: ${data.end}
+      //                   - Travel style: ${data.style}
+      //                   - Max budget: ${data.budget}
+
+      //                   ### Output format (MANDATORY)
+      //                   {
+      //                     "itinerary": [
+      //                       {
+      //                         "day": 1,
+      //                         "date": "Monday, Dec 20",
+      //                         "activities": [
+      //                           {
+      //                             "time": "9:00 AM",
+      //                             "title": "Breakfast",
+      //                             "desc": "",
+      //                             "cost": 0
+      //                           }
+      //                         ]
+      //                       }
+      //                     ],
+      //                     "budget": {
+      //                       "total": 0,
+      //                       "perPerson": 0,
+      //                       "breakdown": {
+      //                         "food": 0,
+      //                         "transport": 0,
+      //                         "activities": 0,
+      //                         "accommodation": 0
+      //                       }
+      //                     }
+      //                   }
+
+      //                   Follow these rules:
+      //                   - Dates must be auto-calculated for each day.
+      //                   - Activities must be similar to the mock function logic.
+      //                   - Costs must be multiplied by number of travelers.
+      //                   - NO markup, NO explanation — only JSON.
+      //                   `
+      //         }
+      //       ]
+      //     }
+      //   ],
+
+      //   // Force Gemini 1.5 Pro to return JSON strictly
+      //   generationConfig: {
+      //     temperature: 0.2,
+      //     responseMimeType: "application/json",
+      //   }
+      // };
+
+
+      const prompt = `
+          You are a travel planning AI.  
+          Generate an itinerary in pure JSON with NO explanation.
+
+          ### Inputs
+          - Destination: ${data.destination}
+          - Travelers: ${data.travelers}
+          - Start date: ${data.start}
+          - End date: ${data.end}
+          - Travel style: ${data.style}
+          - Max budget: ${data.budget}
+
+          ### Output format (MANDATORY)
+          {
+            "itinerary": [
+              {
+                "day": 1,
+                "date": "Monday, Dec 20",
+                "activities": [
+                  {
+                    "time": "9:00 AM",
+                    "title": "Breakfast",
+                    "desc": "",
+                    "cost": 0
+                  }
+                ]
+              }
+            ],
+            "budget": {
+              "total": 0,
+              "perPerson": 0,
+              "breakdown": {
+                "food": 0,
+                "transport": 0,
+                "activities": 0,
+                "accommodation": 0
+              }
+            }
+          }
+
+          Follow these rules:
+          - Dates must be auto-calculated for each day.
+          - Activities must be similar to the mock function logic.
+          - Costs must be multiplied by number of travelers.
+          - NO markup, NO explanation — only JSON.
+          `;
+
+      const payload = {
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      };
+
+      // 🚀 this works now
+      out = await generateItinerary(payload);
+
+      // Convert to JS object (if string)
+      const safeParseJson = (text: string) => {
+        // Try direct parse first
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          // Strip common markdown fences like ```json ... ```
+          const fenceReplaced = text.replace(/```(?:json)?\s*([\s\S]*?)\s*```/, '$1').trim();
+
+          try { return JSON.parse(fenceReplaced); } catch (e2) {
+            // As a last resort, extract the first top-level JSON object by matching braces
+            const firstBrace = fenceReplaced.indexOf('{');
+            if (firstBrace === -1) throw e2;
+
+            let depth = 0;
+            let endIndex = -1;
+            for (let i = firstBrace; i < fenceReplaced.length; i++) {
+              const ch = fenceReplaced[i];
+              if (ch === '{') depth++;
+              else if (ch === '}') depth--;
+
+              if (depth === 0) { endIndex = i; break; }
+            }
+
+            if (endIndex === -1) throw e2;
+
+            const candidate = fenceReplaced.slice(firstBrace, endIndex + 1);
+            return JSON.parse(candidate);
+          }
+        }
+      };
+
+      const parsed = typeof out === 'string' ? safeParseJson(out) : out;
+
+      console.log('Parsed itinerary:', parsed);
+
+
+      // you can now use: parsed.itinerary, parsed.budget
+
     } catch (error) {
-      console.error('Error generating itinerary:', error);
+      console.error("Error generating itinerary:", error);
     }
-    // fetch weather
-
-
-
-
   };
+
 
   // demo payload
   const loadDemo = () => {
