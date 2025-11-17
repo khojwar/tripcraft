@@ -1,6 +1,6 @@
-export async function generateItinerary(payload: any): Promise<any> {
+export async function generateItinerary(url: string, payload: any): Promise<any> {
   try {
-    const res = await fetch(process.env.NEXT_PUBLIC_GEMINI_API_URL!, {
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

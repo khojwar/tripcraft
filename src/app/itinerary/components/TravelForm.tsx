@@ -1,6 +1,4 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
+ 'use client';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,8 +25,13 @@ const travelSchema = z.object({
 
 type TravelFormValues = z.infer<typeof travelSchema>;
 
-export default function TravelForm() {
-  const router = useRouter();
+type GeneratedData = any;
+
+type TripFormProps = {
+  onGeneratedAction?: (data: GeneratedData) => void;
+};
+
+export default function TravelForm({ onGeneratedAction }: TripFormProps) {
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm<TravelFormValues>({
     resolver: zodResolver(travelSchema),
@@ -48,71 +51,6 @@ export default function TravelForm() {
     let out: any = null;  // ✅ declare here so it's accessible everywhere
 
     try {
-      // const payload = {
-      //   contents: [
-      //     {
-      //       role: "user",
-      //       parts: [
-      //         {
-      //           text: `
-      //                   You are a travel planning AI.  
-      //                   Generate an itinerary in pure JSON with NO explanation.
-
-      //                   ### Inputs
-      //                   - Destination: ${data.destination}
-      //                   - Travelers: ${data.travelers}
-      //                   - Start date: ${data.start}
-      //                   - End date: ${data.end}
-      //                   - Travel style: ${data.style}
-      //                   - Max budget: ${data.budget}
-
-      //                   ### Output format (MANDATORY)
-      //                   {
-      //                     "itinerary": [
-      //                       {
-      //                         "day": 1,
-      //                         "date": "Monday, Dec 20",
-      //                         "activities": [
-      //                           {
-      //                             "time": "9:00 AM",
-      //                             "title": "Breakfast",
-      //                             "desc": "",
-      //                             "cost": 0
-      //                           }
-      //                         ]
-      //                       }
-      //                     ],
-      //                     "budget": {
-      //                       "total": 0,
-      //                       "perPerson": 0,
-      //                       "breakdown": {
-      //                         "food": 0,
-      //                         "transport": 0,
-      //                         "activities": 0,
-      //                         "accommodation": 0
-      //                       }
-      //                     }
-      //                   }
-
-      //                   Follow these rules:
-      //                   - Dates must be auto-calculated for each day.
-      //                   - Activities must be similar to the mock function logic.
-      //                   - Costs must be multiplied by number of travelers.
-      //                   - NO markup, NO explanation — only JSON.
-      //                   `
-      //         }
-      //       ]
-      //     }
-      //   ],
-
-      //   // Force Gemini 1.5 Pro to return JSON strictly
-      //   generationConfig: {
-      //     temperature: 0.2,
-      //     responseMimeType: "application/json",
-      //   }
-      // };
-
-
       const prompt = `
           You are a travel planning AI.  
           Generate an itinerary in pure JSON with NO explanation.
@@ -168,8 +106,10 @@ export default function TravelForm() {
         ]
       };
 
+      const url = process.env.NEXT_PUBLIC_GEMINI_API_URL || '';
+
       // 🚀 this works now
-      out = await generateItinerary(payload);
+      out = await generateItinerary(url, payload);
 
       // Convert to JS object (if string)
       const safeParseJson = (text: string) => {
@@ -207,8 +147,9 @@ export default function TravelForm() {
 
       console.log('Parsed itinerary:', parsed);
 
+      // send parsed data to parent (page) so it can render budget/itinerary
+      if (onGeneratedAction) onGeneratedAction(parsed);
 
-      // you can now use: parsed.itinerary, parsed.budget
 
     } catch (error) {
       console.error("Error generating itinerary:", error);

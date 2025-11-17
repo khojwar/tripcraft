@@ -1,12 +1,21 @@
-import TravelForm from "./components/TripForm"
+ 'use client';
+
+import { useState } from 'react';
+import BudgetSection from "./components/Budget-section"
+// import TravelForm from "./components/TravelForm"
+import TripForm from './new/page';
 
 
-const page = () => {
+const ItineraryPage = () => {
+  const [generated, setGenerated] = useState<any | null>(null);
+
   return (
     <div>
-        <TravelForm />
+      <TripForm />
+      {/* <TravelForm onGeneratedAction={setGenerated} /> */}
+      {generated?.budget && <BudgetSection {...generated.budget} />}
     </div>
   )
 }
 
-export default page
+export default ItineraryPage
