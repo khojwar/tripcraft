@@ -10,6 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 
 import { z } from "zod";
 
+import { generateItinerary } from "@/lib/llm";
+
 const tripSchema = z.object({
   tripDescription: z
     .string()
@@ -23,13 +25,56 @@ const TripForm = () => {
   const form = useForm<TripSchemaType>({
     resolver: zodResolver(tripSchema),
     defaultValues: {
-      tripDescription: ""
+      tripDescription: "I want to go to chitwan in July for a romantic getaway with a budget of $2000, including museums and fine dining"
     }
   });
 
-  const onSubmit = (data: TripSchemaType) => {
+  const onSubmit = async (data: TripSchemaType) => {
     console.log("Trip Data:", data);
 
+    const prompt = `
+    You are a travel itinerary assistant. Your task is to extract structured fields from a natural-language trip description. 
+
+    ALWAYS return ONLY a valid JSON object with this structure:
+
+    {
+    "destination": "string (city or country; if none mentioned, infer from context or return null)",
+    "start_date": "YYYY-MM-DD (if no date mentioned, return null)",
+    "trip_length": number (duration in days; if unclear, infer from wording like 'weekend', otherwise default to 3),
+    "travel_style": "budget | mid-range | luxury (infer if possible, otherwise 'mid-range')",
+    "activities": ["array", "of", "strings"], 
+    "travelers": number (infer phrases like 'we', 'my family'; default to 1),
+    "budget": number (total budget in USD; if none mentioned, return null)
+    }
+
+    RULES:
+    - If the user does NOT mention something, DO NOT guess randomly. Use defaults.
+    - Infer only when the wording strongly implies something (e.g., "solo trip" → 1 traveler, "family trip" → 3 or 4 depending on wording).
+    - destination: If multiple places are mentioned, select the main one.
+    - start_date: If a date range is given, use the first date. If seasons like “this summer” → return null (handled by frontend).
+    - activities: extract only explicit verbs/nouns like “hiking”, “food tour”, “skiing”, “beach”, etc.
+    - Return ONLY raw JSON, no explanations.
+
+    User's trip description:
+    "${data.tripDescription}"
+    `;
+
+
+    const payload = {
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ]
+    }
+
+    const url = process.env.NEXT_PUBLIC_GEMINI_API_URL || '';
+
+    const userQuery: any  = await generateItinerary(url, payload);
+    
+
+    console.log("Generated Itinerary JSON:", userQuery);
+    
     // Here you can call your itinerary generation function
 
 
@@ -55,7 +100,7 @@ const TripForm = () => {
                     <Textarea
                       {...field}
                       className="w-full max-w-xl mx-auto resize-y"
-                      placeholder="e.g., I want to go to Paris in July for a romantic getaway with a budget of $2000..."
+                      placeholder="e.g., I want to go to Nepal in July for a romantic getaway with a budget of $2000..."
                     />
                   </FormControl>
                   <FormMessage />
