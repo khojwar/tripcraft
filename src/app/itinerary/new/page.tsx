@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { z } from "zod";
 
 import { generateItinerary } from "@/lib/llm";
+import { UserQueryResponse } from "@/types";
 
 const tripSchema = z.object({
   tripDescription: z
@@ -21,12 +22,14 @@ const tripSchema = z.object({
 
 type TripSchemaType = z.infer<typeof tripSchema>;
 
+const DEFAULT_TRIP_DESCRIPTION = {
+      tripDescription: "I want to go to Kathmandu in July for a romantic getaway with a budget of $2000, including museums and fine dining"
+    };
+
 const TripForm = () => {
   const form = useForm<TripSchemaType>({
     resolver: zodResolver(tripSchema),
-    defaultValues: {
-      tripDescription: "I want to go to chitwan in July for a romantic getaway with a budget of $2000, including museums and fine dining"
-    }
+    defaultValues: DEFAULT_TRIP_DESCRIPTION
   });
 
   const onSubmit = async (data: TripSchemaType) => {
@@ -70,12 +73,46 @@ const TripForm = () => {
 
     const url = process.env.NEXT_PUBLIC_GEMINI_API_URL || '';
 
-    const userQuery: any  = await generateItinerary(url, payload);
+    let userQueryString: string;
+    try {
+      userQueryString = await generateItinerary(url, payload);
+    } catch (error) {
+      console.error("Failed to generate itinerary:", error);
+      return;
+    }
+
+    console.log("Generated User Query String:", userQueryString);
+
+    // Clean the response to remove markdown code blocks if present
+    let cleanedUserQueryString = userQueryString.trim();
+    if (cleanedUserQueryString.startsWith('```json')) {
+      cleanedUserQueryString = cleanedUserQueryString.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    }
+
+    let userQuery: UserQueryResponse;
+    try {
+      userQuery = JSON.parse(cleanedUserQueryString);
+    } catch (error) {
+      console.error("Failed to parse userQuery:", error);
+      return;
+    }
+
+    console.log("Parsed User Query:", userQuery);
+
+
     
 
-    console.log("Generated Itinerary JSON:", userQuery);
-    
-    // Here you can call your itinerary generation function
+    // *************************************************************
+    // weather api
+    // *************************************************************
+
+    const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || '';
+    const userDestination = userQuery.destination; // Replace with extracted destination from itinerary
+
+    const weatherUrl =  `https://api.openweathermap.org/data/2.5/weather?q=${userDestination}&appid=${WEATHER_API_KEY}&units=metric`
+
+    const weather = await fetch(weatherUrl).then(r => r.json());
+    console.log("weather", weather);
 
 
   };

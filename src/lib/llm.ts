@@ -1,4 +1,4 @@
-export async function generateItinerary(url: string, payload: any): Promise<any> {
+export async function generateItinerary(url: string, payload: any): Promise<string> {
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -9,16 +9,18 @@ export async function generateItinerary(url: string, payload: any): Promise<any>
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
-
-    // If JSON-mode is enabled, Gemini returns raw object directly
-    if (data && !data.candidates) {
-      return data;
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API error: ${res.status} ${res.statusText}`);
     }
 
-    // Otherwise extract from text mode
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const data = await res.json();
 
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     return text;
   } catch (error) {
     console.error("Error generating itinerary:", error);
