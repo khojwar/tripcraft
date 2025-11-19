@@ -12,6 +12,8 @@ import { z } from "zod";
 
 import { generateItinerary } from "@/lib/llm";
 import { UserQueryResponse } from "@/types";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const tripSchema = z.object({
   tripDescription: z
@@ -27,6 +29,10 @@ const DEFAULT_TRIP_DESCRIPTION = {
     };
 
 const TripForm = () => {
+
+  const [weather, setWeather] = useState<any | null>(null);
+  const router = useRouter();
+
   const form = useForm<TripSchemaType>({
     resolver: zodResolver(tripSchema),
     defaultValues: DEFAULT_TRIP_DESCRIPTION
@@ -99,23 +105,59 @@ const TripForm = () => {
 
     console.log("Parsed User Query:", userQuery);
 
-
-    
-
     // *************************************************************
-    // weather api
+    // weather api    -- to get landmarks, restaurants, attractions, hotels
     // *************************************************************
 
     const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || '';
-    const userDestination = userQuery.destination; // Replace with extracted destination from itinerary
+    const userDestination = userQuery.destination;
+
+    if (!userDestination || userDestination.toLowerCase() === "null") {
+      console.log("No destination provided, skipping weather fetch.");
+      return;
+    }
 
     const weatherUrl =  `https://api.openweathermap.org/data/2.5/weather?q=${userDestination}&appid=${WEATHER_API_KEY}&units=metric`
 
     const weather = await fetch(weatherUrl).then(r => r.json());
     console.log("weather", weather);
+    // console.log("Latitude:", lat, "Longitude:", lon);
+
+    setWeather(weather);
+
+ 
+    // *************************************************************
+    // Place API (Geoapify) -- to get landmarks, restaurants, attractions, hotels
+    // *************************************************************
+
+    try {
+          const GEOAPIFY_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "";
+          const { lat, lon } = weather.coord;
+      
+          // Fetch nearby attractions (landmarks, museums, etc.)
+          const attractionsUrl = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=circle:${lon},${lat},5000&limit=10&apiKey=${GEOAPIFY_KEY}`;
+          const attractions = await fetch(attractionsUrl).then(r => r.json());
+          console.log("Attractions:", attractions);
+      
+          // Fetch nearby restaurants
+          const restaurantsUrl = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lon},${lat},5000&limit=10&apiKey=${GEOAPIFY_KEY}`;
+          const restaurants = await fetch(restaurantsUrl).then(r => r.json());
+          console.log("Restaurants:", restaurants);
+      
+          // Fetch hotels
+          const hotelsUrl = `https://api.geoapify.com/v2/places?categories=accommodation.hotel&filter=circle:${lon},${lat},5000&limit=10&apiKey=${GEOAPIFY_KEY}`;
+          const hotels = await fetch(hotelsUrl).then(r => r.json());
+          console.log("Hotels:", hotels);
+    } catch (error) {
+      
+    }
+
+
+    router.push(`/itinerary?weather=${encodeURIComponent(JSON.stringify(weather))}`);
 
 
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-180px)] p-4">
