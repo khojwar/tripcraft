@@ -31,6 +31,12 @@ const DEFAULT_TRIP_DESCRIPTION = {
 const TripForm = () => {
 
   const [weather, setWeather] = useState<any | null>(null);
+  const [userQuery, setUserQuery] = useState<UserQueryResponse | null>(null);
+  const [attractions, setAttractions] = useState<any | null>(null);
+  const [restaurants, setRestaurants] = useState<any | null>(null);
+  const [hotels, setHotels] = useState<any | null>(null);
+
+
   const router = useRouter();
 
   const form = useForm<TripSchemaType>({
@@ -98,6 +104,7 @@ const TripForm = () => {
     let userQuery: UserQueryResponse;
     try {
       userQuery = JSON.parse(cleanedUserQueryString);
+      setUserQuery(userQuery);
     } catch (error) {
       console.error("Failed to parse userQuery:", error);
       return;
@@ -138,22 +145,160 @@ const TripForm = () => {
           const attractionsUrl = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=circle:${lon},${lat},5000&limit=10&apiKey=${GEOAPIFY_KEY}`;
           const attractions = await fetch(attractionsUrl).then(r => r.json());
           console.log("Attractions:", attractions);
+          setAttractions(attractions);
       
           // Fetch nearby restaurants
           const restaurantsUrl = `https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=circle:${lon},${lat},5000&limit=10&apiKey=${GEOAPIFY_KEY}`;
           const restaurants = await fetch(restaurantsUrl).then(r => r.json());
           console.log("Restaurants:", restaurants);
+          setRestaurants(restaurants)
       
           // Fetch hotels
           const hotelsUrl = `https://api.geoapify.com/v2/places?categories=accommodation.hotel&filter=circle:${lon},${lat},5000&limit=10&apiKey=${GEOAPIFY_KEY}`;
           const hotels = await fetch(hotelsUrl).then(r => r.json());
           console.log("Hotels:", hotels);
+          setHotels(hotels);
     } catch (error) {
-      
+          console.error("Error fetching places data:", error);
     }
 
 
-    router.push(`/itinerary?weather=${encodeURIComponent(JSON.stringify(weather))}`);
+    const finalPrompt = `
+        You are a travel itinerary generator AI.
+
+        Using the user's extracted trip details and the fetched real-world data, generate a structured JSON itinerary.
+
+        RETURN ONLY VALID JSON. NO MARKDOWN. NO COMMENTS.
+
+        ===========================
+        USER TRIP DETAILS (Parsed):
+        ===========================
+        ${JSON.stringify(userQuery, null, 2)}
+
+        ===========================
+        WEATHER DATA (API - OpenWeatherMap):
+        ===========================
+        ${JSON.stringify(weather, null, 2)}
+
+        ===========================
+        ATTRACTIONS (Geoapify):
+        ===========================
+        ${JSON.stringify(attractions, null, 2)}
+
+        ===========================
+        RESTAURANTS (Geoapify):
+        ===========================
+        ${JSON.stringify(restaurants, null, 2)}
+
+        ===========================
+        HOTELS (Geoapify):
+        ===========================
+        ${JSON.stringify(hotels, null, 2)}
+
+        ===========================
+        COORDINATES:
+        ===========================
+        {
+          "lat": ${weather.coord.lat},
+          "lon": ${weather.coord.lon}
+        }
+
+        =================================================
+        GENERATE THIS FINAL JSON STRUCTURE:
+        =================================================
+        {
+          "destination": "string",
+          "trip_length": number,
+          "location": {
+            "lat": number,
+            "lon": number
+          },
+          "overview_weather_summary": "Short description summarizing temperature, condition, and tips",
+          "itinerary": [
+            {
+              "day": number,
+              "weather": {
+                "temp": number,
+                "description": "string"
+              },
+              "morning": "activity suggestion using attractions + user activities",
+              "afternoon": "activity suggestion using attractions or food",
+              "evening": "restaurant or night activity",
+              "hotel_suggestion": {
+                "name": "string",
+                "address": "string"
+              }
+            }
+          ],
+          "recommended_attractions": [
+            {
+              "name": "string",
+              "category": "string",
+              "address": "string"
+            }
+          ],
+          "recommended_restaurants": [
+            {
+              "name": "string",
+              "address": "string",
+              "cuisine": "string | null"
+            }
+          ],
+          "recommended_hotels": [
+            {
+              "name": "string",
+              "address": "string"
+            }
+          ]
+        }
+
+        =================================================
+        RULES:
+        =================================================
+        - Use ONLY the provided API data. Do NOT invent new places.
+        - Use the provided lat/lon from the weather API.
+        - Itinerary must contain EXACT number of days equal to trip_length.
+        - If weather API doesn't provide a forecast list, reuse the same weather for each day.
+        - Match attractions with user activities (e.g., “hiking” → hiking POIs).
+        - Never explain—ONLY output clean JSON.
+        `;
+
+
+        const finalpayload = {
+            contents: [
+              {
+                parts: [{ text: finalPrompt }]
+              }
+            ]
+          };
+
+
+          let finalItineraryString;
+          try {
+            finalItineraryString = await generateItinerary(url, finalpayload);
+          } catch (error) {
+            await new Promise(r => setTimeout(r, 3000));
+            finalItineraryString = await generateItinerary(url, finalpayload);
+          }
+
+          console.log("Generated Final Itinerary String:", finalItineraryString);
+
+          // Remove markdown wrapper if any
+          const cleaned = finalItineraryString
+            .replace(/^```json/, "")
+            .replace(/```$/, "")
+            .trim();
+
+          const finalItinerary = await JSON.parse(cleaned);
+
+          console.log("FINAL ITINERARY JSON:", finalItinerary);
+
+          router.push(`/itinerary?data=${encodeURIComponent(JSON.stringify(finalItinerary))}`);
+
+
+
+
+    // router.push(`/itinerary?weather=${encodeURIComponent(JSON.stringify(weather))}`);
 
 
   };

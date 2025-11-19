@@ -7,32 +7,34 @@ import TripForm from './new/page';
 import MapView from './components/MapView';
 
 import { useSearchParams } from "next/navigation";
+import { Divide } from 'lucide-react';
 
 const ItineraryPage = () => {
-  const [generatedWeather, setGeneratedWeather] = useState<any | null>(null);
-  const weatherSearchParams = useSearchParams();
-  const weatherParam = weatherSearchParams.get('weather');
+  const [generatedData, setGeneratedData] = useState<any | null>(null);
+  const searchParams = useSearchParams();
+  const DataParam = searchParams.get('data');
 
-  console.log("Weather Param from URL:", weatherParam);
+  console.log("Final data Param from URL:", DataParam);
 
   useEffect(() => {
-    if (weatherParam) {
+    if (DataParam) {
       try {
-        const weatherData = JSON.parse(decodeURIComponent(weatherParam));
-        setGeneratedWeather(weatherData);
+        const Data = JSON.parse(decodeURIComponent(DataParam));
+        setGeneratedData(Data);
       } catch (error) {
         console.error("Error parsing weather data from URL:", error);
-        setGeneratedWeather(null);
+        setGeneratedData(null);
       }
     } else {
-      setGeneratedWeather(null);
+      setGeneratedData(null);
     }
-  }, [weatherParam]);
+  }, [DataParam]);
 
   return (
     <div>
       <TripForm />
-      {generatedWeather?.coord?.lat ? (<MapView lat={generatedWeather?.coord?.lat} lon={generatedWeather?.coord?.lon} />): (<div></div>)}
+      {generatedData && <div> I am here </div>}
+      {generatedData ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
 
     </div>
   )
