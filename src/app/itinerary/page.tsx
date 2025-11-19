@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import BudgetSection from "./components/Budget-section"
 
 import TripForm from './new/page';
 import MapView from './components/MapView';
+import HeroHeader from './components/HeroHeader';
+import ItinerarySection from './components/ItinerarySection';
+import RecommendedAttractions from './components/RecommendedAttractions';
+// import WheretoEat from './components/WheretoEat';
 
 import { useSearchParams } from "next/navigation";
-import { Divide } from 'lucide-react';
+
 
 const ItineraryPage = () => {
   const [generatedData, setGeneratedData] = useState<any | null>(null);
@@ -33,7 +36,25 @@ const ItineraryPage = () => {
   return (
     <div>
       <TripForm />
-      {generatedData && <div> I am here </div>}
+
+      { generatedData ? (
+        <HeroHeader data={generatedData} />
+      ) : (<div></div>) }
+
+      {
+        generatedData ? (
+          <ItinerarySection data={generatedData} />
+        ) : (<div></div>)
+      }
+
+      {
+        generatedData ? (
+          <RecommendedAttractions data={generatedData} />
+        ) : (<div></div>)
+      }
+
+      {/* { generatedData ? (<WheretoEat data={generatedData} />) : (<div></div>)} */}
+
       {generatedData ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
 
     </div>
