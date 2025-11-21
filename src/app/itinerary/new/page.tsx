@@ -312,173 +312,316 @@ const TripForm = () => {
     //       const finalItinerary = await JSON.parse(cleaned);
 
     //       console.log("FINAL ITINERARY JSON:", finalItinerary);
+   
+   
+   
 
     // step1: META SUMMARY PROMPT
-    const step1Prompt = `
-You are a travel data summarizer AI.
-
-Your job is to take large raw API responses and compress them into a small JSON summary.
-
-RETURN ONLY VALID JSON. NO MARKDOWN.
-
-==============================
-USER TRIP DETAILS:
-==============================
-${JSON.stringify(userQuery, null, 2)}
-
-==============================
-COMPACT WEATHER:
-==============================
-${JSON.stringify(
-  {
-    temp: weather?.main?.temp,
-    feels_like: weather?.main?.feels_like,
-    description: weather?.weather?.[0]?.description,
-  },
-  null,
-  2
-)}
-
-==============================
-COMPACT ATTRACTIONS (TOP 10):
-==============================
-${JSON.stringify(
-  attractionsData.features.map((a: GeoapifyFeature) => ({
-    name: a.properties.name,
-    address: a.properties.address_line1,
-    category: a.properties.categories?.[0] || null,
-  })),
-  null,
-  2
-)}
-
-==============================
-COMPACT RESTAURANTS (TOP 10):
-==============================
-${JSON.stringify(
-  restaurantsData.features.map((r: GeoapifyFeature) => ({
-    name: r.properties.name,
-    address: r.properties.address_line1,
-    cuisine: r.properties.cuisines?.[0] || null,
-  })),
-  null,
-  2
-)}
-
-==============================
-COMPACT HOTELS (TOP 10):
-==============================
-${JSON.stringify(
-  hotelsData.features.map((h: GeoapifyFeature) => ({
-    name: h.properties.name,
-    address: h.properties.address_line1,
-  })),
-  null,
-  2
-)}
-
-==============================
-COORDINATES:
-==============================
-{
-  "lat": ${weather.coord.lat},
-  "lon": ${weather.coord.lon}
-}
-
-==============================
-OUTPUT JSON STRUCTURE:
-==============================
-{
-  "destination": "string",
-  "lat": number,
-  "lon": number,
-  "weather_summary": "Short sentence summarizing weather",
-  "top_attractions": [],
-  "top_restaurants": [],
-  "top_hotels": []
-}
-
-Rules:
-- Pick 3–6 best attractions / restaurants / hotels.
-- Do NOT invent places.
-- Return ONLY JSON.
-`;
-
-    // Call LLM Step 1
-    const step1Payload = {
-      contents: [{ parts: [{ text: step1Prompt }] }],
-    };
-
-    const step1Response = await generateItinerary(url, step1Payload);
-    const summaryJSON = JSON.parse(
-      step1Response.replace(/^```json|```$/g, "").trim()
-    );
-    console.log("META SUMMARY:", summaryJSON);
-
-    // STEP 2 — USE SUMMARY JSON TO GENERATE FINAL ITINERARY
-    const step2Prompt = `
-You are a travel itinerary generator AI.
-
-Using ONLY this summary JSON, generate a complete day-by-day itinerary.
-
-RETURN ONLY VALID JSON. NO MARKDOWN.
-
-==============================
-SUMMARY DATA:
-==============================
-${JSON.stringify(summaryJSON, null, 2)}
-
-==============================
-FINAL JSON STRUCTURE:
-==============================
-{
-  "destination": "string",
-  "trip_length": ${userQuery.trip_length},
-  "location": {
-    "lat": number,
-    "lon": number
-  },
-  "overview_weather_summary": "string",
-  "itinerary": [
-    {
-      "day": number,
-      "weather": {
-        "temp": number,
-        "description": "string"
-      },
-      "morning": "string",
-      "afternoon": "string",
-      "evening": "string",
-      "hotel_suggestion": {
-        "name": "string",
-        "address": "string"
+    // Fetch weather forecast for trip duration
+    let weatherForecast: any[] = [];
+    if (userQuery.trip_length && userQuery.trip_length <= 7) {
+      try {
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${userDestination}&appid=${WEATHER_API_KEY}&units=metric`;
+      const forecastResponse = await fetch(forecastUrl).then((r) => r.json());
+      
+      // OpenWeatherMap forecast API returns 3-hour interval data for 5 days
+      // Group by day and get one forecast per day
+      const dailyForecasts = new Map<string, any>();
+      forecastResponse.list?.forEach((item: any) => {
+      const date = new Date(item.dt * 1000);
+      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      if (!dailyForecasts.has(dateKey)) {
+      dailyForecasts.set(dateKey, {
+        temp: item.main.temp,
+        feels_like: item.main.feels_like,
+        description: item.weather[0].description,
+        date: dateKey
+      });
       }
+      });
+      
+      weatherForecast = Array.from(dailyForecasts.values()).slice(0, userQuery.trip_length);
+      console.log("Weather Forecast:", weatherForecast);
+      } catch (error) {
+      console.error("Error fetching weather forecast:", error);
+      // Fallback to current weather for all days with dates starting from today
+      const today = new Date();
+      weatherForecast = Array(userQuery.trip_length).fill(null).map((_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + index);
+      return {
+        temp: weather?.main?.temp,
+        feels_like: weather?.main?.feels_like,
+        description: weather?.weather?.[0]?.description,
+        date: date.toISOString().split('T')[0]
+      };
+      });
+      }
+    } else {
+      // For trips longer than 7 days or no duration, use current weather with dates
+      const today = new Date();
+      weatherForecast = Array(userQuery.trip_length || 3).fill(null).map((_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + index);
+      return {
+        temp: weather?.main?.temp,
+        feels_like: weather?.main?.feels_like,
+        description: weather?.weather?.[0]?.description,
+        date: date.toISOString().split('T')[0]
+      };
+      });
     }
-  ],
-  "recommended_attractions": [],
-  "recommended_restaurants": [],
-  "recommended_hotels": []
-}
 
-Rules:
-- Use ONLY summary data (do not use raw API).
-- itinerary.length must equal trip_length.
-- Weather = use same data for all days.
-- Use real attractions, restaurants, and hotels from summary.
-- No explanation. Only JSON.
-`;
+    const step1Prompt = `
+    You are a travel data summarizer AI.
 
-    // Call LLM Step 2
-    const step2Payload = {
+    Your job is to take large raw API responses and compress them into a small JSON summary.
+
+    RETURN ONLY VALID JSON. NO MARKDOWN.
+
+    ==============================
+    USER TRIP DETAILS:
+    ==============================
+    ${JSON.stringify(userQuery, null, 2)}
+
+    ==============================
+    WEATHER FORECAST (Day-by-Day):
+    ==============================
+    ${JSON.stringify(weatherForecast, null, 2)}
+
+    ==============================
+    COMPACT ATTRACTIONS (TOP 10):
+    ==============================
+    ${JSON.stringify(
+      attractionsData.features.map((a: GeoapifyFeature) => ({
+      name: a.properties.name,
+      address: a.properties.address_line1,
+      category: a.properties.categories?.[0] || null,
+      })),
+      null,
+      2
+    )}
+
+    ==============================
+    COMPACT RESTAURANTS (TOP 10):
+    ==============================
+    ${JSON.stringify(
+      restaurantsData.features.map((r: GeoapifyFeature) => ({
+      name: r.properties.name,
+      address: r.properties.address_line1,
+      cuisine: r.properties.cuisines?.[0] || null,
+      })),
+      null,
+      2
+    )}
+
+    ==============================
+    COMPACT HOTELS (TOP 10):
+    ==============================
+    ${JSON.stringify(
+      hotelsData.features.map((h: GeoapifyFeature) => ({
+      name: h.properties.name,
+      address: h.properties.address_line1,
+      })),
+      null,
+      2
+    )}
+
+    ==============================
+    COORDINATES:
+    ==============================
+    {
+      "lat": ${weather.coord.lat},
+      "lon": ${weather.coord.lon}
+    }
+
+    ==============================
+    OUTPUT JSON STRUCTURE:
+    ==============================
+    {
+      "destination": "string",
+      "lat": number,
+      "lon": number,
+      "weather_summary": "Short sentence summarizing overall weather for the trip duration",
+      "daily_weather": [
+      {
+      "day": number,
+      "date": "YYYY-MM-DD",
+      "temp": number,
+      "feels_like": number,
+      "description": "string"
+      }
+      ],
+      "top_attractions": [
+      {
+      "name": "string",
+      "address": "string",
+      "contact": "string (phone number if available, otherwise null)"
+      }
+      ],
+      "top_restaurants": [
+      {
+      "name": "string",
+      "address": "string",
+      "contact": "string (phone number if available, otherwise null)",
+      "cuisine": "string | null"
+      }
+      ],
+      "top_hotels": [
+      {
+      "name": "string",
+      "address": "string",
+      "contact": "string (phone number if available, otherwise null)"
+      }
+      ]
+    }
+
+    Rules:
+    - Include day-by-day weather from the forecast data provided with dates in YYYY-MM-DD format.
+    - Weather summary should mention temperature range and conditions across all days.
+    - Pick 3–6 best attractions / restaurants / hotels FROM THE PROVIDED DATA ONLY.
+    - If no attractions/restaurants/hotels are found in the data, suggest common/popular options for ${userQuery.destination} based on your knowledge.
+    - Do NOT leave arrays empty. Always provide at least 3 items per category.
+    - Ensure all place names and addresses are realistic and relevant to ${userQuery.destination}.
+    - Each item must include name, address, and contact (if available from API data or your knowledge).
+    - If contact information is not available, use null.
+    - Return ONLY JSON.
+    `;
+
+      // Call LLM Step 1
+      const step1Payload = {
+      contents: [{ parts: [{ text: step1Prompt }] }],
+      };
+
+      let step1Response: string;
+      try {
+      step1Response = await generateItinerary(url, step1Payload);
+      } catch (error) {
+      console.error("Error in Step 1:", error);
+      throw new Error("Failed to generate travel summary");
+      }
+
+      const summaryJSON = JSON.parse(
+      step1Response.replace(/^```json|```$/g, "").trim()
+      );
+      console.log("META SUMMARY:", summaryJSON);
+
+      // Validate summary has required data
+      if (!summaryJSON.top_attractions?.length || 
+      !summaryJSON.top_restaurants?.length || 
+      !summaryJSON.top_hotels?.length) {
+      console.warn("Summary JSON missing some data, but proceeding with fallback");
+      }
+
+      // STEP 2 — USE SUMMARY JSON TO GENERATE FINAL ITINERARY
+      const step2Prompt = `
+    You are a travel itinerary generator AI.
+
+    Using ONLY this summary JSON, generate a complete day-by-day itinerary based on the user's specified trip length.
+
+    RETURN ONLY VALID JSON. NO MARKDOWN.
+
+    ==============================
+    SUMMARY DATA:
+    ==============================
+    ${JSON.stringify(summaryJSON, null, 2)}
+
+    ==============================
+    USER PREFERENCES:
+    ==============================
+    - Trip Length: ${userQuery.trip_length} days
+    - Travel Style: ${userQuery.travel_style || 'mid-range'}
+    - Activities: ${userQuery.activities?.join(', ') || 'general sightseeing'}
+    - Budget: ${userQuery.budget ? `$${userQuery.budget}` : 'flexible'}
+
+    ==============================
+    FINAL JSON STRUCTURE:
+    ==============================
+    {
+      "destination": "string",
+      "trip_length": ${userQuery.trip_length},
+      "location": {
+      "lat": number,
+      "lon": number
+      },
+      "overview_weather_summary": "string (include temperature range and conditions across trip duration)",
+      "itinerary": [
+      {
+      "day": number,
+      "date": "YYYY-MM-DD",
+      "weather": {
+      "temp": number,
+      "feels_like": number,
+      "description": "string"
+      },
+      "morning": "string (specific activity at a real place from summary)",
+      "afternoon": "string (specific activity at a real place from summary)",
+      "evening": "string (specific restaurant or activity from summary)",
+      "hotel_suggestion": {
+      "name": "string (from summary hotels)",
+      "address": "string",
+      "contact": "string | null"
+      }
+      }
+      ],
+      "recommended_attractions": [
+      {
+      "name": "string",
+      "address": "string",
+      "contact": "string | null"
+      }
+      ],
+      "recommended_restaurants": [
+      {
+      "name": "string",
+      "address": "string",
+      "contact": "string | null",
+      "cuisine": "string | null"
+      }
+      ],
+      "recommended_hotels": [
+      {
+      "name": "string",
+      "address": "string",
+      "contact": "string | null"
+      }
+      ]
+    }
+
+    Rules:
+    - Use ONLY places from the summary data with their full details (name, address, contact).
+    - Use the day-by-day weather from summary.daily_weather for each corresponding day, INCLUDING the date field.
+    - Each day in the itinerary MUST include the date in YYYY-MM-DD format from the weather data.
+    - Match activities to user preferences: ${userQuery.activities?.join(', ') || 'sightseeing'}.
+    - Consider weather conditions when suggesting activities (e.g., indoor activities for rainy days).
+    - itinerary.length must equal exactly ${userQuery.trip_length} days.
+    - Each day must have accurate weather and date from the forecast data.
+    - Each day must reference REAL place names from summary (not generic terms).
+    - Morning/afternoon/evening must be specific: "Visit [Place Name] at [Address]" or "Dine at [Restaurant Name]".
+    - Vary hotel suggestions across days if multiple hotels available.
+    - Ensure all recommendations match the destination: ${userQuery.destination}.
+    - All recommended items must include name, address, and contact fields.
+    - No explanation. Only JSON.
+    `;
+
+      // Call LLM Step 2
+      const step2Payload = {
       contents: [{ parts: [{ text: step2Prompt }] }],
-    };
+      };
 
-    const finalItineraryString = await generateItinerary(url, step2Payload);
-    const finalItinerary = JSON.parse(
+      let finalItineraryString: string;
+      try {
+      finalItineraryString = await generateItinerary(url, step2Payload);
+      } catch (error) {
+      console.error("Error in Step 2:", error);
+      throw new Error("Failed to generate final itinerary");
+      }
+
+      const finalItinerary = JSON.parse(
       finalItineraryString.replace(/^```json|```$/g, "").trim()
-    );
+      );
 
-    console.log("FINAL ITINERARY JSON:", finalItinerary);
+      console.log("FINAL ITINERARY JSON:", finalItinerary);
 
     router.push(
       `/itinerary?data=${encodeURIComponent(JSON.stringify(finalItinerary))}`
