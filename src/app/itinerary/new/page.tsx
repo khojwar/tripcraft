@@ -77,15 +77,18 @@ const TripForm = () => {
     "travel_style": "budget | mid-range | luxury (infer if possible, otherwise 'mid-range')",
     "activities": ["array", "of", "strings"], 
     "travelers": number (infer phrases like 'we', 'my family'; default to 1),
-    "budget": number (total budget in USD; if none mentioned, return null)
+    "budget": number (total budget in USD; if none mentioned, return null),
+    "error": "string (only include if date validation fails, otherwise omit this field)"
     }
 
     RULES:
     - If the user does NOT mention something, DO NOT guess randomly. Use defaults.
     - Infer only when the wording strongly implies something (e.g., "solo trip" → 1 traveler, "family trip" → 3 or 4 depending on wording).
     - destination: If multiple places are mentioned, select the main one.
-    - start_date: If a date range is given, use the first date. If seasons like “this summer” → return null (handled by frontend).
-    - activities: extract only explicit verbs/nouns like “hiking”, “food tour”, “skiing”, “beach”, etc.
+    - start_date: If a date range is given, use the first date. If seasons like "this summer" → return null (handled by frontend).
+    - **DATE VALIDATION**: If a specific date is mentioned, check if it is in the past (before today's date: ${new Date().toISOString().split('T')[0]}). If the date is in the past, include an "error" field with the message: "Please provide a future date within the next 7 days for trip planning."
+    - If the date is valid (today or in the future within 7 days), proceed normally without the error field.
+    - activities: extract only explicit verbs/nouns like "hiking", "food tour", "skiing", "beach", etc.
     - Return ONLY raw JSON, no explanations.
 
     User's trip description:
@@ -130,6 +133,13 @@ const TripForm = () => {
     }
 
     console.log("Parsed User Query:", userQuery);
+
+    if (userQuery?.error) {
+      setLoading(false);
+      // console.error("Date validation error:", userQuery?.error);
+      router.push(`/itinerary?data=${encodeURIComponent(JSON.stringify(userQuery))}`);
+      return;
+    }
 
     // *************************************************************
     // weather api    -- to get landmarks, restaurants, attractions, hotels

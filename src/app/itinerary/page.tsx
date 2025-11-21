@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from "next/dynamic";
+import toast from 'react-hot-toast';
 
 import TripForm from './new/page';
 // import MapView from './components/MapView';
@@ -37,6 +38,25 @@ const ItineraryPage = () => {
       setGeneratedData(null);
     }
   }, [DataParam]);
+
+  const shownErrorToastRef = useRef(false);
+
+  useEffect(() => {
+    if (generatedData?.error && !shownErrorToastRef.current) {
+      toast.error(`Error: ${generatedData.error}`, { duration: 8000 });
+      shownErrorToastRef.current = true;
+    } else if (!generatedData?.error) {
+      shownErrorToastRef.current = false;
+    }
+  }, [generatedData?.error]);
+
+  if (generatedData?.error) {
+    return (
+      <div>
+        <TripForm />
+      </div>
+    );
+  }
 
   return (
     <div>

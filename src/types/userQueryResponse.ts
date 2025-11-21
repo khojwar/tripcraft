@@ -6,4 +6,5 @@ export interface UserQueryResponse {
   activities: (string | null)[];
   travelers: number | null;
   budget: number | null;
+  error?: string;
 }

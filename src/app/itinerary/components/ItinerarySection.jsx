@@ -7,9 +7,9 @@ import {
 const ItinerarySection = ({data}) => {
   return (
     <div className='mb-4'>
-        <h1 className='text-3xl text-center font-bold mb-4'>Your 3-Day Itinerary</h1>
+        <h1 className='text-3xl text-center font-bold mb-4'>Your {data?.itinerary?.length}-Day Itinerary</h1>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 ">
-            {data?.itinerary.map((d) => (
+            {data?.itinerary?.map((d) => (
                 <Card key={d?.day} >
                     <CardTitle className="text-center text-2xl font-bold">Day {d?.day} ( {d?.date} )</CardTitle>
                     <p className="text-center font-semibold">{d?.weather?.temp} - {d?.weather?.description}</p>
