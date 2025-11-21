@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader } from 'lucide-react';
 
 import {
   Form,
@@ -58,7 +59,10 @@ const TripForm = () => {
     defaultValues: DEFAULT_TRIP_DESCRIPTION,
   });
 
+  const [loading, setLoading] = useState(false);
+
   const onSubmit = async (data: TripSchemaType) => {
+    setLoading(true);
     console.log("Trip Data:", data);
 
     const prompt = `
@@ -479,10 +483,12 @@ Rules:
     router.push(
       `/itinerary?data=${encodeURIComponent(JSON.stringify(finalItinerary))}`
     );
+
+    setLoading(false);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-180px)] p-4">
+    <div className={`flex items-center justify-center min-h-[calc(100vh-180px)] p-4 ${loading ? "opacity-50 pointer-events-none" : ""} py-8`}>
       <div className="flex flex-col justify-center text-center w-full max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-4">TripCraft</h1>
         <p>Describe your dream trip in a sentence</p>
@@ -518,6 +524,16 @@ Rules:
             </Button>
           </form>
         </Form>
+        {loading && (
+          <div className="mt-6 flex flex-col items-center justify-center gap-4">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+            <div className="space-y-2">
+              <p className="text-lg font-medium animate-pulse">Generating your itinerary...</p>
+              <p className="text-sm text-muted-foreground">Finding the best places for your trip</p>
+            </div>
+
+          </div>
+        )}
       </div>
     </div>
   );
