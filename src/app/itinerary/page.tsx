@@ -1,13 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from "next/dynamic";
 
 import TripForm from './new/page';
-import MapView from './components/MapView';
+// import MapView from './components/MapView';
+const MapView = dynamic(() => import("./components/MapView"), {
+  ssr: false,
+});
 import HeroHeader from './components/HeroHeader';
 import ItinerarySection from './components/ItinerarySection';
 import RecommendedAttractions from './components/RecommendedAttractions';
-// import WheretoEat from './components/WheretoEat';
+import WheretoEat from './components/WheretoEat';
+import HotelRecommendations from './components/HotelRecommendations';
 
 import { useSearchParams } from "next/navigation";
 
@@ -53,7 +58,9 @@ const ItineraryPage = () => {
         ) : (<div></div>)
       }
 
-      {/* { generatedData ? (<WheretoEat data={generatedData} />) : (<div></div>)} */}
+      { generatedData ? (<WheretoEat data={generatedData} />) : (<div></div>)}
+
+      { generatedData ? (<HotelRecommendations data={generatedData} /> ) : (<div></div>)}
 
       {generatedData ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
 
