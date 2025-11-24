@@ -41,22 +41,48 @@ const ItineraryPage = () => {
 
   const shownErrorToastRef = useRef(false);
 
+  // if (generatedData?.error ) {
+  //   return (
+  //     <div>
+  //       <TripForm />
+  //     </div>
+  //   );
+  // }
+
   useEffect(() => {
-    if (generatedData?.error && !shownErrorToastRef.current) {
-      toast.error(`Error: ${generatedData.error}`, { duration: 8000 });
+    if (!generatedData) {
+      shownErrorToastRef.current = false;
+      return;
+    }
+
+    const isCityNotFound = generatedData?.message === 'city not found' || generatedData?.cod === '404' || generatedData?.cod === 404;
+    const hasError = !!generatedData?.error || isCityNotFound;
+    // Debug: log detection values so we can see why toast may not display
+    console.log('ItineraryPage: error detection', { generatedData, isCityNotFound, hasError, shownErrorToast: shownErrorToastRef.current });
+
+    if (hasError && !shownErrorToastRef.current) {
+      const rawMsg = generatedData?.message ?? generatedData?.error ?? (isCityNotFound ? 'city not found' : 'An error occurred');
+      const display = String(rawMsg).startsWith('Error:') ? String(rawMsg) : `Error: ${rawMsg}`;
+      console.log('ItineraryPage: showing toast with message:', display);
+      toast.error(display, { duration: 8000 });
       shownErrorToastRef.current = true;
-    } else if (!generatedData?.error) {
+    } else if (!hasError) {
       shownErrorToastRef.current = false;
     }
-  }, [generatedData?.error]);
+  }, [generatedData]);
 
-  if (generatedData?.error) {
+  const isCityNotFound = generatedData?.message === 'city not found' || generatedData?.cod === '404' || generatedData?.cod === 404;
+
+  if (isCityNotFound) {
     return (
       <div>
         <TripForm />
       </div>
     );
   }
+
+
+
 
   return (
     <div>
@@ -82,7 +108,7 @@ const ItineraryPage = () => {
 
       { generatedData ? (<HotelRecommendations data={generatedData} /> ) : (<div></div>)}
 
-      {generatedData ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
+      {generatedData?.location?.lat ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
 
     </div>
   )

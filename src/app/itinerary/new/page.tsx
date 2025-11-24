@@ -42,7 +42,7 @@ type TripSchemaType = z.infer<typeof tripSchema>;
 
 const DEFAULT_TRIP_DESCRIPTION = {
   tripDescription:
-    "I want to go to Kathmandu in July for a romantic getaway with a budget of $2000, including museums and fine dining",
+    "I want to go to Kathmandu, Nepal in December for a 5-day adventure trip with my friends. We enjoy hiking and cultural experiences, and we have a budget of $1500 per person.",
 };
 
 const TripForm = () => {
@@ -159,6 +159,12 @@ const TripForm = () => {
     console.log("weather", weather);
     // console.log("Latitude:", lat, "Longitude:", lon);
 
+    if (weather.message === 'city not found') {
+      router.push(`/itinerary?data=${encodeURIComponent(JSON.stringify(weather))}`);
+      setLoading(false);
+      return;
+    }
+
     setWeather(weather);
 
     // *************************************************************
@@ -167,6 +173,7 @@ const TripForm = () => {
 
     try {
       const GEOAPIFY_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "";
+
       const { lat, lon } = weather.coord;
 
       // Fetch nearby attractions (landmarks, museums, etc.)

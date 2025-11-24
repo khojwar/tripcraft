@@ -15,7 +15,7 @@ const RecommendedAttractions = ({data}) => {
                     <Card key={attraction?.name}>
                         <CardTitle className="text-2xl font-bold px-6">{attraction?.name}</CardTitle>
                         <CardDescription className="px-6">{attraction?.address}</CardDescription>
-                        <CardContent>Category: {attraction?.category}</CardContent>
+                        <CardContent>{attraction?.category && `Category: ${attraction?.category}`}</CardContent>
                     </Card>
                 ))
             }
