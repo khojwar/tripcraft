@@ -14,13 +14,15 @@ import {
 } from "@/components/ui/sheet"
 
 import { Menu } from 'lucide-react';
+import { satisfy } from '@/app/fonts';
+
 
 const Navbar = () => {
     return (
         <nav className="w-full border-b shadow-sm sticky top-0 bg-white dark:bg-gray-900 z-60 px-3">
         <div className="container flex justify-between items-center py-3">
             {/* Logo */}
-            <Link href="/" className="text-2xl font-bold">
+            <Link href="/" className={`${satisfy.className} text-2xl font-bold`}>
                 <span className="text-blue-700">Trip</span>Craft
             </Link>
 

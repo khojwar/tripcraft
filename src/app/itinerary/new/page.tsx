@@ -21,6 +21,7 @@ import { generateItinerary } from "@/lib/llm";
 import { UserQueryResponse } from "@/types";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { satisfy } from "@/app/fonts";
 
 interface GeoapifyFeature {
   properties: {
@@ -650,13 +651,13 @@ const TripForm = () => {
   return (
     <div className={`flex items-center justify-center min-h-[calc(100vh-180px)] p-4 ${loading ? "opacity-50 pointer-events-none" : ""} py-8`}>
       <div className="flex flex-col justify-center text-center w-full max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">TripCraft</h1>
+        <h1 className={`text-3xl font-bold mb-4 ${satisfy.className}`}><span className="text-blue-700">Trip</span>Craft</h1>
         <p>Describe your dream trip in a sentence</p>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="mt-4 space-y-4"
+            className="mt-16 space-y-4"
           >
             {/* Textarea Field */}
             <FormField
