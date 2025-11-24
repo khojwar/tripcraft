@@ -58,12 +58,12 @@ const ItineraryPage = () => {
     const isCityNotFound = generatedData?.message === 'city not found' || generatedData?.cod === '404' || generatedData?.cod === 404;
     const hasError = !!generatedData?.error || isCityNotFound;
     // Debug: log detection values so we can see why toast may not display
-    console.log('ItineraryPage: error detection', { generatedData, isCityNotFound, hasError, shownErrorToast: shownErrorToastRef.current });
+    // console.log('ItineraryPage: error detection', { generatedData, isCityNotFound, hasError, shownErrorToast: shownErrorToastRef.current });
 
     if (hasError && !shownErrorToastRef.current) {
       const rawMsg = generatedData?.message ?? generatedData?.error ?? (isCityNotFound ? 'city not found' : 'An error occurred');
       const display = String(rawMsg).startsWith('Error:') ? String(rawMsg) : `Error: ${rawMsg}`;
-      console.log('ItineraryPage: showing toast with message:', display);
+      // console.log('ItineraryPage: showing toast with message:', display);
       toast.error(display, { duration: 8000 });
       shownErrorToastRef.current = true;
     } else if (!hasError) {

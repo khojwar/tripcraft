@@ -12,7 +12,7 @@ const ItinerarySection = ({data}) => {
             {data?.itinerary?.map((d) => (
                 <Card key={d?.day} >
                     <CardTitle className="text-center text-2xl font-bold">Day {d?.day} ( {d?.date} )</CardTitle>
-                    <p className="text-center font-semibold">{d?.weather?.temp} - {d?.weather?.description}</p>
+                    <p className="text-center font-semibold">{d?.weather?.temp}°C - {d?.weather?.description}</p>
 
                     <CardContent>
                         <div className="mb-4">
