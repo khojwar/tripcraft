@@ -17,6 +17,8 @@ import HotelRecommendations from './components/HotelRecommendations';
 
 import { useSearchParams } from "next/navigation";
 
+import { jsPDF } from "jspdf";
+
 
 const ItineraryPage = () => {
   const [generatedData, setGeneratedData] = useState<any | null>(null);
@@ -81,6 +83,15 @@ const ItineraryPage = () => {
     );
   }
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+
+    doc.text("TripCraft Itinerary", 10, 10);
+    doc.text(JSON.stringify(generatedData, null, 2), 10, 20);
+
+    doc.save("tripcraft_itinerary.pdf");
+  };
+
 
 
 
@@ -88,27 +99,45 @@ const ItineraryPage = () => {
     <div>
       <TripForm />
 
-      { generatedData ? (
-        <HeroHeader data={generatedData} />
-      ) : (<div></div>) }
+      {generatedData && (
+        <div>
+          <div className="flex justify-end m-4">
+            <button
+              onClick={downloadPDF}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
+            >
+              Download PDF
+            </button>
+          </div>
 
-      {
-        generatedData ? (
-          <ItinerarySection data={generatedData} />
-        ) : (<div></div>)
-      }
+          <div id="pdf-content">
+            
+            { generatedData ? (
+              <HeroHeader data={generatedData} />
+            ) : (<div></div>) }
 
-      {
-        generatedData ? (
-          <RecommendedAttractions data={generatedData} />
-        ) : (<div></div>)
-      }
+            {
+              generatedData ? (
+                <ItinerarySection data={generatedData} />
+              ) : (<div></div>)
+            }
 
-      { generatedData ? (<WheretoEat data={generatedData} />) : (<div></div>)}
+            {
+              generatedData ? (
+                <RecommendedAttractions data={generatedData} />
+              ) : (<div></div>)
+            }
 
-      { generatedData ? (<HotelRecommendations data={generatedData} /> ) : (<div></div>)}
+            { generatedData ? (<WheretoEat data={generatedData} />) : (<div></div>)}
 
-      {generatedData?.location?.lat ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
+            { generatedData ? (<HotelRecommendations data={generatedData} /> ) : (<div></div>)}
+
+            {generatedData?.location?.lat ? (<MapView lat={generatedData?.location?.lat} lon={generatedData?.location?.lon} />): (<div></div>)}
+
+
+          </div>
+        </div>
+      )}
 
     </div>
   )
