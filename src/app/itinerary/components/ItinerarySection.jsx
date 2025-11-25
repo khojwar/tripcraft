@@ -3,6 +3,7 @@ import {
   CardContent,
   CardTitle,
 } from "@/components/ui/card"
+import { CloudSun, Hotel, Moon, Sun } from "lucide-react"
 
 const ItinerarySection = ({data}) => {
   return (
@@ -16,22 +17,22 @@ const ItinerarySection = ({data}) => {
 
                     <CardContent>
                         <div className="mb-4">
-                            <h1 className="font-bold">Morning</h1>
+                            <h1 className="font-bold flex items-center gap-2 text-yellow-600"><Sun /> Morning</h1>
                             <p>{d?.morning}</p>
                         </div>
                         <div className="mb-4">
-                            <h1 className="font-bold">Afternoon</h1>
+                            <h1 className="font-bold flex items-center gap-2 text-yellow-600"><CloudSun /> Afternoon</h1>
                             <p>{d?.afternoon}</p>
                         </div>
                         <div className="mb-4">
-                            <h1 className="font-bold">Evening</h1>
+                            <h1 className="font-bold flex items-center gap-2 text-yellow-600"><Moon /> Evening</h1>
                             <p>{d?.evening}</p>
                         </div>
                     </CardContent>
                     <div className="p-4 border-l-8 rounded-2xl shadow-2xl  border-blue-500 m-4">
-                        <p>Stay at</p>
+                        <p className="text-blue-400 flex items-center gap-2 font-bold"><Hotel /> Stay at</p>
                         <h1 className="font-bold">{d?.hotel_suggestion?.name}</h1>
-                        <p className="text-gray-50/50">{d?.hotel_suggestion?.address}</p>
+                        <p className="text-gray-900/50 dark:text-gray-400/50 ">{d?.hotel_suggestion?.address}</p>
                     </div>
                 </Card>
             ))}

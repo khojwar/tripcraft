@@ -1,8 +1,11 @@
+'use client';
+
 import {
   Card,
   CardDescription,
   CardTitle,
 } from "@/components/ui/card"
+import { MapPin, Utensils } from "lucide-react"
 
 const WheretoEat = ({data}) => {
   return (
@@ -12,8 +15,8 @@ const WheretoEat = ({data}) => {
             {
                 data?.recommended_restaurants?.map((r) => (
                     <Card key={r?.name} >
-                        <CardTitle className="text-2xl font-bold px-6">{r?.name}</CardTitle>
-                        <CardDescription className="px-6">{r?.address}</CardDescription>
+                        <CardTitle className="text-2xl font-bold px-6 flex items-center gap-2 text-yellow-600"><Utensils /> {r?.name}</CardTitle>
+                        <CardDescription className="px-6 flex items-center gap-2"><MapPin /> {r?.address}</CardDescription>
                     </Card>
                 ))
             }

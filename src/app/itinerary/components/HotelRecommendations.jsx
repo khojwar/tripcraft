@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Hotel, MapPin } from 'lucide-react';
 
 const HotelRecommendations = ({data}) => {
   return (
@@ -10,8 +11,8 @@ const HotelRecommendations = ({data}) => {
             {
                 data?.recommended_hotels?.map((h) => (
                     <Card key={h?.name} >
-                        <CardTitle className="text-2xl font-bold px-6">{h?.name}</CardTitle>
-                        <CardDescription className="px-6">{h?.address}</CardDescription>
+                        <CardTitle className="text-2xl font-bold px-6 flex text-yellow-600"><Hotel /> {h?.name}</CardTitle>
+                        <CardDescription className="px-6 flex "><MapPin /> {h?.address}</CardDescription>
                     </Card>
                 ))
             }
